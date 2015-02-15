@@ -1,0 +1,5 @@
+---
+crosscompile_dependencies:
+ - git
+ - gcc-4.7-arm-linux-gnueabi
+working_dir: "~/raspberrypi"

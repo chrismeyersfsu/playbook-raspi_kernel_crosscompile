@@ -1,0 +1,2 @@
+---
+ansible_sudo_pass: sudo_users_password_goes_here

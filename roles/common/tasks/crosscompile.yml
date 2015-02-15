@@ -1,0 +1,43 @@
+---
+- name: install dependencies
+  sudo: yes
+  # 8 hour cache validity
+  apt: "name={{ item }} state=installed update_cache=yes cache_valid_time=28800"
+  with_items: crosscompile_dependencies
+
+- name: link compiler
+  sudo: yes
+  file: state=link src=/usr/bin/arm-linux-gnueabi-gcc-4.7 dest=/usr/bin/arm-linux-gnueabi-gcc
+
+- name: make working directory
+  file: path={{ working_dir }} state=directory
+
+- name: git kernel source
+  git: repo=https://github.com/raspberrypi/linux.git dest='{{ working_dir }}/linux' depth=1
+- name: git kernel tools
+  git: repo=https://github.com/raspberrypi/tools.git dest='{{ working_dir }}/tools' depth=1
+
+- name: make kernel config
+  shell: "make ARCH=arm CROSS_COMPILE=/usr/bin/arm-linux-gnueabi- bcmrpi_defconfig"
+  args:
+    chdir: "{{ working_dir }}/linux"
+  tags:
+    - crosscompile_kernel_config
+
+- name: make kernel
+  command: "make ARCH=arm CROSS_COMPILE=/usr/bin/arm-linux-gnueabi- -k -j5"
+  args:
+    chdir: "{{ working_dir }}/linux"
+
+- name: make modules dir
+  file: path={{ working_dir }}/modules state=directory
+
+- name: make kernel modules
+  command: "make modules_install ARCH=arm CROSS_COMPILE=/usr/bin/arm-linux-gnueabi- INSTALL_MOD_PATH=../modules/"
+  args:
+    chdir: "{{ working_dir }}/linux"
+
+- name: make image tools
+  command: "./imagetool-uncompressed.py ../../linux/arch/arm/boot/Image"
+  args:
+    chdir: "{{ working_dir }}/tools/mkimage"
